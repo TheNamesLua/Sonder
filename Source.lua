@@ -14,18 +14,20 @@
 	sonder:Destroy() -- alias for sonder:Clean()
 	sonder:Supports(item) -- will tell you if an item is supported by Sonder
 	sonder:Extends() -- returns a new empty sonder object
+	sonder:GetItems() -- returns a table of every item currently in the sonder
 ]]
 
 local sonder = {}
-sonder.__index = sonder
+sonder.ClassName = "Sonder"
 
 export type _SonderClass = {
-	Hold : (self, thing: any)->nil,
+	Handle : (self, thing_or_things: any)->nil,
 	Release: (self, thing: any)->nil,
 	Clean : (self)->nil,
 	Destroy : (self)->nil,
 	Supports: (self, thing: any)->boolean,
 	Extends: (self)->_SonderClass,
+	GetItems: (self)->any,
 }
 
 local Supported_Types = {
@@ -36,24 +38,36 @@ local Supported_Types = {
 }
 
 local function CleanupItem(item)
+	if not item then
+		return
+	end
+	
 	local type = typeof(item)
 
 	local passed, err = pcall(function()
 		if type == "Instance" then
 			item:Destroy()
-		elseif type == "RBXScriptConnection" then
+		end
+		
+		if type == "RBXScriptConnection" then
 			if item.Connected then
 				item:Disconnect()
 			end
-		elseif type == "thread" then
+		end
+		
+		if type == "thread" then
 			coroutine.close(item)
-		elseif type == "table" then
+		end
+			
+		if type == "table" then
 			if item.Destroy then
 				item:Destroy()
 			else
 				error("Error cleaning up table", 2)
-			end
+			end	
 		end
+		
+		error(`Could not clean up item {item}`)
 	end)
 
 	if not passed then
@@ -65,11 +79,13 @@ function sonder.new(): _SonderClass
 	return setmetatable(sonder, sonder)
 end
 
-function sonder:Hold(item: any)
-	local _type = typeof(item)
-	assert(table.find(Supported_Types, _type), `Type {_type} Is not supported with sonder. List of supported items: {table.unpack(Supported_Types)}`)
-	
-	table.insert(self.Items, item)
+function sonder:Handle(...)
+	for _, item in ipairs(table.pack(...)) do
+		local _type = typeof(item)
+		assert(table.find(Supported_Types, _type), `Type {_type} Is not supported with sonder. List of supported items: {table.unpack(Supported_Types)}`)
+
+		table.insert(self.Items, item)
+	end
 end
 
 function sonder:Release(item: any)
@@ -94,6 +110,10 @@ function sonder:Clean()
 	end
 	
 	table.clear(self.Items)
+end
+
+function sonder:GetItems(): {any}
+	return self.Items
 end
 
 sonder.Items = {}
