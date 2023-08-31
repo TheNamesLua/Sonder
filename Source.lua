@@ -67,14 +67,21 @@ local function CleanupItem(item)
 			end	
 		end
 	end)
-
-	if not passed then
-		error(err)
-	end
 end
 
 function sonder.new(): _SonderClass
-	return setmetatable(sonder, sonder)
+	local newSonder = {}
+	newSonder.ClassName = "Sonder"
+	newSonder.Items = {} -- Initialize the Items table for the new object
+
+	for key, value in pairs(sonder) do
+		if type(value) == "function" then
+			newSonder[key] = value
+		end
+	end
+
+	setmetatable(newSonder, sonder)
+	return newSonder
 end
 
 function sonder:Handle(...)
