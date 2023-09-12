@@ -102,11 +102,7 @@ function sonder:Release(item: any)
 end
 
 function sonder:Supports(item)
-	if table.find(Supported_Types, typeof(item)) then
-		return true
-	end
-
-	return false
+	return table.find(Supported_Types, typeof(item)) ~= nil
 end
 
 function sonder:Clean()
